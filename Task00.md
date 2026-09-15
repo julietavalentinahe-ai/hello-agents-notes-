@@ -1,8 +1,28 @@
-Hello-Agents 入门篇 Task00 打卡笔记：环境配置与跑通第一个智能体
-
+# Hello-Agents 入门篇 Task00 打卡笔记：环境配置与跑通第一个智能体
+ 
 资料来源：Datawhale《Hello-Agents 入门篇》官方仓库 https://github.com/datawhalechina/hello-agents   本笔记为个人学习记录，转载请标注来源
 
-一、我的环境配置步骤（Windows）
+ 再次调用 写了bat文件以省略 进入位置和激活运行的命令环节 
+ 
+### **成功运行截图如下**
+
+<img alt="Task00跑通截图" src="https://github.com/user-attachments/assets/e661110c-9bec-4dfb-8c8f-aadc71444142" />
+
+bat操作
+
+在记事本写 下面命令 另存为 run_chapter1.bat（保存类型选"所有文件"，不让它变成 .txt）
+
+@echo off                              ← 不显示命令本身，只显示运行结果
+
+call venv\Scripts\activate             ← 激活虚拟环境（call保证跑完回到这个文件继续往下）
+
+python code/chapter1/FirstAgentTest.py ← 运行程序
+
+pause                                  ← 运行完先不关窗口，方便看报错
+
+
+
+## 一、我的环境配置步骤（Windows）
 
 下载代码：浏览器打开仓库 → 绿色 Code → Download ZIP → 解压到 D:\hello-agents-main
 
@@ -14,13 +34,14 @@ Hello-Agents 入门篇 Task00 打卡笔记：环境配置与跑通第一个智�
 
 装依赖：pip install requests tavily-python openai python-dotenv
 
-申请两个免费 Key：Tavily（tavily.com 注册拿 tvly-xxx）、AIHubmix（aihubmix.com，模型中心选「免费」标签下的模型）
+申请两个免费 Key：Tavily（tavily.com 注册拿 tvly-xxx）、AIHubmix（aihubmix.com，模型中心选「免费」标签下的模型）/登录阿里云 → 进 百炼控制台：bailian.console.aliyun.com → API-KEY（或直接开 bailian.console.aliyun.com/?apiKey=1）-> 创建 API-KEY → 生成一串 key
+复制这串 key，填进 FirstAgentTest.py 第 145 行
 
 改代码：记事本打开 code/chapter1/FirstAgentTest.py，替换下面四行
 
 API_KEY = "sk-xxx"                             # 替换 YOUR_API_KEY
 
-BASE_URL = "https://aihubmix.com/v1"           # 不要漏了结尾的 /v1
+BASE_URL = "https://aihubmix.com/v1"           # 不要漏了结尾的 /v1   百炼的为 "https://dashscope.aliyuncs.com/compatible-mode/v1"
 
 MODEL_ID = "免费标签下的模型名"           
 
@@ -28,13 +49,13 @@ os.environ['TAVILY_API_KEY'] = "tvly-xxx"      # 替换 YOUR_TAVILY_API_KEY
 
 跑：python code/chapter1/FirstAgentTest.py
 
-二、操作小要点总结
+## 二、操作小要点总结
 
-教程 4.3 的 .env / 系统环境部分在这一章可以直接在下载的 D:\hello-agents-main\code\chapter1\FirstAgentTest.py 里替换那四行
+教程 4.3 的 .env / 系统环境部分在这一章可以直接 在下载的 D:\hello-agents-main\code\chapter1\FirstAgentTest.py 里替换那四行
 
 微软商店版 Python 一律用 python main.py   认不了 py main.py
 
-三、运行显示如下
+## 三、运行显示如下
 C:\Users\13706>cd /d D:\hello-agents-main
 
 D:\hello-agents-main>python -m venv venv
@@ -250,6 +271,6 @@ Action: Finish[北京今天的天气为晴朗（Sunny），气温27摄氏度，�
 
 (venv) D:\hello-agents-main>
 
-四、心得思考
+## 四、心得思考
 
 跟着仓库步骤一步步完成环境配置并跑通，在这过程中巩固了 Python 函数、类与异常处理（try/except），更重要的是理清了 venv/依赖/Key 的配置流程，把一个项目跑起来的通用流程基本上是 搭环境、装依赖、填凭证最后跑通。配环境像跟单纯写代码逻辑比起来更立体
