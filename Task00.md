@@ -2,7 +2,7 @@
  
 资料来源：Datawhale《Hello-Agents 入门篇》官方仓库 https://github.com/datawhalechina/hello-agents   本笔记为个人学习记录，转载请标注来源
 
- 再次调用 写了bat文件以省略 进入位置和激活运行的命令环节 
+ 再次调用 写了bat文件(可以双击运行的小程序)以省略 进入位置和激活运行的命令环节 
  
 ### **成功运行截图如下**
 
