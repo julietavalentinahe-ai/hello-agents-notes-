@@ -54,12 +54,13 @@ python
 python
 
 'class TravelAssistant:
+
     def __init__(self):
         self.prompt_history = []        # 每个实例自己一份，初始化为空
 
 def run_assistant(user_input, ...):
+
     assistant = TravelAssistant()       # 每次进来要新建，上轮历史清空
-    
     ...'
     
 改后版本： 记忆放在所有循环之外，每轮都往里追加
@@ -71,6 +72,7 @@ python
 'prompt_history = []                 # 写在 while True 外面
 
 while True:
+
     raw = input("请输入城市或问题（exit 退出）: ")
     ...
     prompt_history.append(f"用户请求: {user_prompt}")   # 每轮追加用户的请求
@@ -87,8 +89,10 @@ while True:
 python
 
 'if not any(k in raw for k in ("天气","行程","景点","游玩","攻略","推荐","查询","查","weather","trip","plan")):
+
     user_prompt = f"请查询{raw}今天的天气，并根据天气推荐合适的旅游景点和一日行程安排。"
 else:
+
     user_prompt = raw'
 
 
@@ -99,7 +103,9 @@ else:
 python
 
 'action_match = re.search(r"Action: (.*)", llm_output, re.DOTALL)
+
 if not action_match:
+
     observation = "错误: 未能解析到 Action 字段。..."
     ...
     continue'
@@ -109,8 +115,10 @@ if not action_match:
 python
 
 'if action_match:
+
     action_str = action_match.group(1).strip()
 else:
+
     fallback = re.search(r"(Finish\[.*?\]\s*$|\w+\([^)]*\))", llm_output, re.DOTALL | re.MULTILINE)
     if fallback:
         action_str = fallback.group(1).strip()
@@ -119,13 +127,14 @@ else:
         ...'
 
 
-⑤ 去掉菜单 / 改交互
+⑤ 去掉菜单 
 
 官方版： 
 
 python
 
 'if __name__ == "__main__":
+
     print("选择运行模式:")
     print("1. 运行测试示例 (北京)")
     print("2. 交互模式")
@@ -139,6 +148,7 @@ python
 python
 
 'while True:
+
     raw = input("\n请输入城市或问题（exit 退出）: ").strip()
     if raw.lower() in ("exit", "quit", "q", "退出"):
         break
@@ -151,7 +161,9 @@ python
 .env 文件（密钥不直接写死在代码里，而是通过 os.environ 去读 .env 里的值）
 
 '# .env.example（模板，复制改名为 .env 后填自己的值）
+
 DASHSCOPE_API_KEY=APIKey
+
 TAVILY_API_KEY=avilyAPIKey
 
 
