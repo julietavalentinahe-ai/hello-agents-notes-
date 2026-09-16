@@ -150,8 +150,6 @@ python
 
 .env 文件（密钥不直接写死在代码里，而是通过 os.environ 去读 .env 里的值）
 
-① .env —— 纯文本配置文件，里面是 KEY=VALUE，专门放密钥
-
 '# .env.example（模板，复制改名为 .env 后填自己的值）
 DASHSCOPE_API_KEY=APIKey
 TAVILY_API_KEY=avilyAPIKey
