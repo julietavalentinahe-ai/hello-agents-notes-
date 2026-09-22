@@ -4,29 +4,39 @@
 
 ### ReAct（边想边干）
 
-<img width="377" height="465" alt="react_1" src="https://github.com/user-attachments/assets/f9105eb7-32e0-48e0-a0c6-b1fab050d08a" />
+<img  alt="react_1" src="https://github.com/user-attachments/assets/f9105eb7-32e0-48e0-a0c6-b1fab050d08a" />
 
-<img width="371" height="359" alt="react_2" src="https://github.com/user-attachments/assets/24363509-8fd9-4354-a36a-6ec82f33030d" />
 
-<img width="377" height="478" alt="react_3" src="https://github.com/user-attachments/assets/98d07541-f9a1-45bf-b1aa-f1cd8555c7e2" />
+
+<img alt="react_2" src="https://github.com/user-attachments/assets/24363509-8fd9-4354-a36a-6ec82f33030d" />
+
+
+<img  alt="react_3" src="https://github.com/user-attachments/assets/98d07541-f9a1-45bf-b1aa-f1cd8555c7e2" />
+
 
 <img width="781" height="470" alt="react_4" src="https://github.com/user-attachments/assets/a7f41bda-b5e7-46b4-a7d9-56cb65b50902" />
+
 
 
 每步 `Thought → Action → Observation`，模型说 `Finish[答案]` 才停。本次走到 Finish 给出答案（华为最新手机 = 2024-03-28 发布的 Pura 90 Pro Max），并自己发现"2025.11.25 发布会"是未来日期、判定不合理 → 体现 ReAct 会**自我校验**搜索结果。
 
 ### Plan-and-Solve（先计划再执行）
 
+
 <img width="785" height="403" alt="plan_1" src="https://github.com/user-attachments/assets/771d511a-a5cb-4d24-9ab8-187d29dff46d" />
+
 
 
 "正在生成计划"只出现**一次**，然后"执行 1/4 → 4/4"按顺序一口气跑完，中途不回头。苹果题答案 = **70**（15+30+25）。计划质量决定成败。
 
 ### Reflection（写完再校对）
 
+
 <img width="396" height="472" alt="reflection_1" src="https://github.com/user-attachments/assets/045bcc31-1842-4dcf-af9e-a119ebc4530c" />
 
+
 <img width="418" height="474" alt="reflection_2" src="https://github.com/user-attachments/assets/bab64fba-d9d7-40bb-b0b7-05a0919f04a7" />
+
 
 <img width="322" height="155" alt="reflection_3" src="https://github.com/user-attachments/assets/0ad1bae8-d329-4938-a35a-e6ffc254eec0" />
 
@@ -86,9 +96,3 @@ few-shot：加 1–2 个标准格式样例，小模型遵循率显著提升，�
 工具：`query_order`（订单信息）、`query_logistics`（物流状态）、`check_refund_policy`（政策判定）、`send_email`（发回复）。
 提示词：立场锚定"合法合规、控损失且让用户被尊重"；政策红线写死、语气共情不过度承诺、决定留痕可审计。
 风险：误退款（金额阈值+人工复核）、隐私泄露（脱敏+最小权限）、幻觉（只基于工具真实返回作答）、提示注入（输入清洗）、情绪冲突（升级人工）。
-
----
-### 错误点回顾
-1. Q2 把 Reflection 当多设备调度方案（错，它只打磨输出）→ 应选 ReAct。
-2. Q1 把 Reflection 说成"筛选工具"（错，是生成→评审→优化）。
-3. Q3 举例混淆：温度调节偏 ReAct。
