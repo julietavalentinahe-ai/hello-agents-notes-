@@ -3,24 +3,37 @@
 ## 一、三种范式运行截图
 
 ### ReAct（边想边干）
-![ReAct 1](Task04_screenshots/react_1.png)
-![ReAct 2](Task04_screenshots/react_2.png)
-![ReAct 3](Task04_screenshots/react_3.png)
-![ReAct 收尾](Task04_screenshots/react_4.png)
+
+<img width="377" height="465" alt="react_1" src="https://github.com/user-attachments/assets/f9105eb7-32e0-48e0-a0c6-b1fab050d08a" />
+
+<img width="371" height="359" alt="react_2" src="https://github.com/user-attachments/assets/24363509-8fd9-4354-a36a-6ec82f33030d" />
+
+<img width="377" height="478" alt="react_3" src="https://github.com/user-attachments/assets/98d07541-f9a1-45bf-b1aa-f1cd8555c7e2" />
+
+<img width="781" height="470" alt="react_4" src="https://github.com/user-attachments/assets/a7f41bda-b5e7-46b4-a7d9-56cb65b50902" />
+
 
 每步 `Thought → Action → Observation`，模型说 `Finish[答案]` 才停。本次走到 Finish 给出答案（华为最新手机 = 2024-03-28 发布的 Pura 90 Pro Max），并自己发现"2025.11.25 发布会"是未来日期、判定不合理 → 体现 ReAct 会**自我校验**搜索结果。
 
 ### Plan-and-Solve（先计划再执行）
-![Plan](Task04_screenshots/plan_1.png)
+
+<img width="785" height="403" alt="plan_1" src="https://github.com/user-attachments/assets/771d511a-a5cb-4d24-9ab8-187d29dff46d" />
+
 
 "正在生成计划"只出现**一次**，然后"执行 1/4 → 4/4"按顺序一口气跑完，中途不回头。苹果题答案 = **70**（15+30+25）。计划质量决定成败。
 
 ### Reflection（写完再校对）
-![Reflection 1](Task04_screenshots/reflection_1.png)
-![Reflection 2](Task04_screenshots/reflection_2.png)
-![Reflection 3](Task04_screenshots/reflection_3.png)
+
+<img width="396" height="472" alt="reflection_1" src="https://github.com/user-attachments/assets/045bcc31-1842-4dcf-af9e-a119ebc4530c" />
+
+<img width="418" height="474" alt="reflection_2" src="https://github.com/user-attachments/assets/bab64fba-d9d7-40bb-b0b7-05a0919f04a7" />
+
+<img width="322" height="155" alt="reflection_3" src="https://github.com/user-attachments/assets/0ad1bae8-d329-4938-a35a-e6ffc254eec0" />
+
+
 
 机制：生成 → 评审 →（可能）优化，多轮迭代。本次初版直接上埃拉托色尼筛法，第 1 轮反思即判"无需改进" → 只跑 1 轮收敛。质量高，但每轮多调一次模型、费 token。
+
 
 ### 三者对比
 | 范式 | 风格 | 适合 |
