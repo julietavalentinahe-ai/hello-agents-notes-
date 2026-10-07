@@ -39,17 +39,44 @@ if REAL_LLM:
         api_key=os.getenv("LLM_API_KEY"),
         base_url=os.getenv("LLM_BASE_URL", "https://api.openai.com/v1"),
         temperature=0.7,
-        # 限制单次输出上限，避免超过 Groq 免费额度（qwen3.8-27b 每分钟仅 1000 输出 token）
-        max_tokens=int(os.getenv("LLM_MAX_TOKENS", "700")),
     )
 
+    # ---- 按用途分配输出预算----
+    BASE_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "2000"))
+    BUDGET = {
+        "review": 400,                              # 只回评分/意见
+        "write": max(800, int(BASE_TOKENS * 0.6)),  # 初稿
+        "revise": BASE_TOKENS,                      # 修订稿 
+    }
+    _bound = {}
+
+    def _get_llm(max_tokens: int):
+        if max_tokens not in _bound:
+            _bound[max_tokens] = _llm.bind(max_tokens=max_tokens)
+        return _bound[max_tokens]
+
+    def _invoke(prompt: str, max_tokens: int):
+        r = _get_llm(max_tokens).invoke([HumanMessage(content=prompt)])
+        meta = getattr(r, "response_metadata", {}) or {}
+        return r.content, meta.get("finish_reason")
+
     def call_llm(prompt: str, kind: str = "write") -> str:
-        # 用 HumanMessage 发送，兼容 Groq 上要求 user 角色的模型（如 gpt-oss / qwen3）
+        # 用 HumanMessage 发送，兼容 Groq 上要求 user 角色的模型（像 gpt-oss / qwen3）
         import time
+        budget = BUDGET.get(kind, BASE_TOKENS)
         last_err = None
         for attempt in range(4):
             try:
-                return _llm.invoke([HumanMessage(content=prompt)]).content
+                content, finish = _invoke(prompt, budget)
+                # 截断保护：被 token 上限砍断时，预算翻倍再要一次
+                if finish == "length":
+                    print(f"   ⚠️ 输出被截断（{budget} token 不够），自动加倍重试…")
+                    content2, finish2 = _invoke(prompt, budget * 2)
+                    if finish2 != "length" or len(content2) > len(content):
+                        content, finish = content2, finish2
+                    if finish == "length":
+                        print("   ⚠️ 仍被截断，本轮内容可能不完整。")
+                return content
             except Exception as e:  # noqa: BLE001
                 last_err = e
                 msg = str(e)
@@ -61,7 +88,7 @@ if REAL_LLM:
                     raise
         raise last_err
 else:
-    # ---- Mock 模式：无需联网即可演示完整循环 ----
+    # ---- Mock 模式：无需联网可演示完整循环 ----
     class _Mock:
         def __init__(self):
             self.review_calls = 0
@@ -105,10 +132,19 @@ TOPIC = "远程办公时代的团队协作"  # 默认主题，可用环境变量
 # ============================================================================
 def write_node(state: WritingState) -> dict:
     """步骤1：根据主题生成/修订草稿。"""
+    # 事实性约束：LLM 为了满足「要有案例/数据」最容易编造细节（幻觉），
+    # 所以明确禁止虚构机构名、金额、时间；不确定时改用模糊表述。
+    FACT_RULE = (
+        "【事实性要求】严禁编造具体的机构名、人物名、金额、时间、报告名称。"
+        "举例时优先使用公开报道过的真实事件；"
+        "若无法确定，请用「某跨国企业」「公开报道的一起案件」等模糊表述，"
+        "不要为了显得具体而杜撰细节。\n"
+    )
     topic = state.get("topic") or TOPIC
     prompt = (
         f"请围绕主题《{topic}》写一篇 200 字左右的短文，"
-        "要求有清晰的小标题、具体案例和流畅的过渡。"
+        "要求有清晰的小标题、具体案例和流畅的过渡。\n"
+        + FACT_RULE
     )
     draft = call_llm(prompt, kind="write")
     return {
@@ -126,7 +162,9 @@ def review_node(state: WritingState) -> dict:
         "你是经验丰富的中文编辑。请审阅下面的草稿并打分(0-100)。\n"
         "请从「结构是否清晰、案例是否具体、语言是否流畅」三方面如实评价，\n"
         "并给出 2 条最关键的修改建议。评分保持客观：一般初稿在 70-80 分，\n"
-        "润色完善后可到 85 分以上。\n\n"
+        "润色完善后可到 85 分以上。\n"
+        "另外注意：若文中出现疑似杜撰的机构名、金额、时间等具体细节，"
+        "应视为硬伤并扣分，同时在意见里点名要求删除或改成模糊表述。\n\n"
         f"草稿：\n{draft}\n\n"
         "严格按以下格式回复（不要多余内容）：\n评分：<整数>\n意见：<一句话修改建议>"
     )
@@ -165,6 +203,9 @@ def revise_node(state: WritingState) -> dict:
     prompt = (
         "你是资深中文编辑。请根据修改意见，把下面这篇草稿改写为更完善的文章。\n"
         "要求：保留主题与核心观点；补齐缺失的案例或数据；结构更清晰；语言更流畅。\n"
+        "篇幅控制在 700-900 字，务必写完整并以句号结尾，不要中途停止。\n"
+        "【事实性要求】严禁编造具体的机构名、人物名、金额、时间、报告名称；"
+        "若原稿中有无法核实的细节，请改为模糊表述或直接删掉，不要保留杜撰内容。\n"
         "直接输出修改后的完整文章正文，不要任何解释、前缀或评分。\n\n"
         f"修改意见：{comments}\n\n原稿：\n{draft}"
     )
@@ -178,7 +219,7 @@ def revise_node(state: WritingState) -> dict:
 
 
 # ============================================================================
-# 4) 条件边 Conditional Edge —— 实现「循环 / 退出」判断
+# 4) 条件边 Conditional Edge —— 实现 循环 / 退出 判断
 # ============================================================================
 def should_continue(state: WritingState) -> str:
     """根据评分与轮次决定下一步路由。"""
@@ -262,7 +303,30 @@ def main():
     print("=" * 60)
 
     # ---- 把成稿保存成 Markdown 文件，方便直接拿去交作业 ----
-    out_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "article.md")
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+
+    # 输出文件名：默认 article.md；
+    # 可用环境变量 OUT_FILE 指定（如 OUT_FILE="我的文章.md"）；
+    # 设为 auto 则按主题自动命名，换主题不会再互相覆盖。
+    out_name = os.getenv("OUT_FILE", "article.md").strip() or "article.md"
+    if out_name.lower() == "auto":
+        safe = "".join(ch for ch in TOPIC if ch not in '\\/:*?"<>|').strip()[:40]
+        out_name = f"article_{safe}.md"
+    if not out_name.endswith(".md"):
+        out_name += ".md"
+    out_path = os.path.join(base_dir, out_name)
+
+    # 保存前先备份上一版旧稿到 history/，避免直接被覆盖后找不回来
+    import shutil
+    import datetime
+    if os.path.exists(out_path):
+        history_dir = os.path.join(base_dir, "history")
+        os.makedirs(history_dir, exist_ok=True)
+        stamp = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        backup_path = os.path.join(history_dir, f"article_{stamp}.md")
+        shutil.copyfile(out_path, backup_path)
+        print(f"📦 上一版旧稿已备份到：{backup_path}")
+
     mode_txt = "真实 LLM" if REAL_LLM else "Mock（无 Key 演示）"
     content = (
         f"# {TOPIC}\n\n"
