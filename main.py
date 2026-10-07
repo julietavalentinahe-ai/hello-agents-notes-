@@ -25,6 +25,7 @@ class WritingState(TypedDict):
     max_rounds: int                           # 最大修订轮次（安全阀）
     final_doc: str                            # 最终成稿
     step: str                                 # 当前所处步骤（便于观测）
+    fact_check: str                           # 文中需要人工核实的事实点清单
 
 
 # ============================================================================
@@ -166,13 +167,18 @@ def review_node(state: WritingState) -> dict:
         "另外注意：若文中出现疑似杜撰的机构名、金额、时间等具体细节，"
         "应视为硬伤并扣分，同时在意见里点名要求删除或改成模糊表述。\n\n"
         f"草稿：\n{draft}\n\n"
-        "严格按以下格式回复（不要多余内容）：\n评分：<整数>\n意见：<一句话修改建议>"
+        "严格按以下格式回复（不要多余内容）：\n"
+        "评分：<整数>\n"
+        "意见：<一句话修改建议>\n"
+        "待核实：<文中出现的机构名/金额/时间/报告名等需要人工核实的细节，"
+        "用分号分隔；若文中没有这类细节就写 无>"
     )
     result = call_llm(prompt, kind="review")
     # 解析评分
     import re
     score = 0
     comments = result
+    fact_check = ""
     for line in result.splitlines():
         if line.startswith("评分"):
             try:
@@ -181,6 +187,9 @@ def review_node(state: WritingState) -> dict:
                 score = 0
         if line.startswith("意见"):
             comments = line.split("：", 1)[-1].strip()
+        if line.startswith("待核实"):
+            # 兼容中文冒号「：」和英文冒号「:」两种写法
+            fact_check = line.replace("：", ":", 1).split(":", 1)[-1].strip()
     # 兜底：模型未严格按「评分：」输出时，从全文取第一个 0-100 的整数
     if score == 0:
         for m in re.findall(r"\b(\d{1,3})\b", result):
@@ -188,9 +197,13 @@ def review_node(state: WritingState) -> dict:
             if 0 <= v <= 100:
                 score = v
                 break
+    # 每轮审阅都立刻把待核实清单打出来，避免只在最后才出现、容易被漏看
+    if fact_check and fact_check != "无":
+        print("   🔎 待核实：", "；".join(x.strip() for x in fact_check.replace(";", "；").split("；") if x.strip()))
     return {
         "score": score,
         "comments": comments,
+        "fact_check": fact_check,
         "step": "reviewed",
         "messages": [AIMessage(content=f"🔍 审阅评分：{score} / 100 —— {comments}")],
     }
@@ -260,12 +273,23 @@ def build_graph():
 # ============================================================================
 def main():
     global TOPIC
-    TOPIC = os.getenv("TOPIC", TOPIC)
+    topic_env = os.getenv("TOPIC")
+    TOPIC = topic_env or TOPIC
+    out_file_env = os.getenv("OUT_FILE", "")
     max_rounds = int(os.getenv("MAX_ROUNDS", "4"))
 
     print("=" * 60)
     print("📝 LangGraph 写作-审阅-修订 反思循环助手")
     print(f"   主题：{TOPIC}")
+    # 防呆提醒：没设 TOPIC 时明确告知用的是默认题目，避免"换题失败还以为换了"
+    if topic_env is None:
+        print("   ⚠️ 本次未设置 TOPIC，使用的是默认题目！")
+        print("      换题目请先运行： $env:TOPIC=\"你的题目\"; python main.py")
+    # 防呆提醒：手动设了 OUT_FILE 但没设 TOPIC，最容易把题目错填进文件名
+    if topic_env is None and out_file_env and out_file_env.lower() != "auto":
+        print("   ⚠️ 你设置了 OUT_FILE 却没设置 TOPIC——OUT_FILE 只管\"存成什么文件名\"，")
+        print("      管不了\"写什么题目\"。想换题+按题存稿，一条命令：")
+        print('      $env:TOPIC="你的题目"; $env:OUT_FILE="auto"; python main.py')
     print(f"   模式：{'真实 LLM' if REAL_LLM else 'Mock（无 Key 演示）'}")
     print(f"   最大轮次：{max_rounds}")
     print("=" * 60)
@@ -300,6 +324,20 @@ def main():
         print(final["draft"])
     else:
         print("   状态：⚠️ 达到最大轮次仍未达标，以上为当前最优稿。")
+
+    # ---- 事实核查清单：把文中需要人工核实的细节单独列出来 ----
+    fact = final.get("fact_check", "").strip()
+    if fact and fact != "无":
+        print("=" * 60)
+        print("🔎 需要人工核实的事实点（AI 可能记错，用前请搜一遍）：")
+        for item in fact.replace(";", "；").split("；"):
+            item = item.strip()
+            if item:
+                print(f"   · {item}")
+    else:
+        print("=" * 60)
+        print("🔎 待核实清单：本轮审阅未列出需核实的细节")
+        print("   （可能是文章里本来就没有具体数据，也可能是小模型没按要求输出这行）")
     print("=" * 60)
 
     # ---- 把成稿保存成 Markdown 文件，方便直接拿去交作业 ----
